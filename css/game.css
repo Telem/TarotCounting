@@ -1,0 +1,112 @@
+body {
+	width:100%;
+}
+
+#allplayers {
+/*	overflow-x: scroll;*/
+}
+
+#allplayers .player.selected .name {
+	font-weight: bold;
+}
+
+#allplayers .player.active .name {
+	font-size: large;
+}
+
+#allplayers .player {
+	display: block;
+	margin: 1em;
+}
+
+.player .name {
+	vertical-align: middle;
+}
+
+.player .tokens-container {
+	display: inline;
+	padding-left: 0.5em;
+}
+
+.player .token {
+	vertical-align: top;
+}
+
+.token {
+	display: inline-block;
+	padding: 0.5em;
+	border: thin solid grey;
+	border-radius: 10px;
+}
+
+.token.role {
+	background-color: #B1BCED;
+}
+
+.token.bid {
+	background-color: #B7E5C0;
+}
+
+.token.achievement {
+	background-color: #E8E6BB;
+}
+
+.token.achievement.slam {
+	background-color: #AF0A0A;
+	color: white;
+}
+
+.token.inactive {
+	display:none;
+}
+
+/* Hide the attacker token, there is no reason to assign it directly */
+#tokens .token.role[data-dbid='1'] {
+	display: none;
+}
+
+
+#scoring {
+	margin: 1em;
+}
+
+#scoring > * {
+	padding: 0.5em;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#scoring .score input,
+#scoring .contract select {
+	margin-left: 1em;
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+/* Score card */
+
+#game_score {
+	display: table;
+}
+
+#game_score .player {
+	display: table-row;
+}
+
+#game_score .player .name {
+	display: table-cell;
+	padding-right: 2em;
+}
+
+#game_score .player .score {
+	display: table-cell;
+	padding-left: 1em;
+}
+
+.submission_notice.success {
+	color: #73A368;
+}
+
+.submission_notice.error {
+	color: #A53B3B;
+}

@@ -1,0 +1,132 @@
+#upper {
+	display:block;
+	height:auto;
+}
+
+.collapsible:not(.collapsed) #allplayers .player.selected {
+	margin-left: 2em;
+}
+
+#allplayers .player.selected .name {
+	font-weight: bold;
+}
+
+#allplayers .player {
+	display: block;
+	margin: 1em;
+}
+
+
+.left-side {
+	display: inline-block;
+}
+.right-side {
+	display: inline-block;
+	vertical-align: top;
+	max-width: 50%;
+}
+
+.token {
+	display: inline-block;
+	padding: 1em;
+	border: thin solid grey;
+	border-radius: 10px;
+}
+
+.token.role {
+	background-color: #B1BCED;
+}
+
+.token.bid {
+	background-color: #B7E5C0;
+}
+
+.token.achievement {
+	background-color: #E8E6BB;
+}
+
+.token.achievement.slam {
+	background-color: #AF0A0A;
+	color: white;
+}
+
+#allplayers .player .token {
+	padding: 0.5em;
+}
+
+.token.inactive {
+	display:none;
+}
+
+
+
+/* Collapsing player list */
+.collapsed #allplayers .player:not(.selected) {
+	display:none;
+}
+
+.collapsible.collapsed .collapse-controller .expanded-text {
+	display:none;
+}
+
+.collapsible:not(.collapsed) .collapse-controller .collapsed-text {
+	display:none;
+}
+
+.collapse-controller {
+	background-color: #DDDDDD;
+	border: thin solid black;
+	padding: 3px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.collapsible {
+	margin-left: auto;
+	margin-right: auto;
+	width: auto;'
+}
+
+
+#scoring {
+	margin: 1em;
+}
+
+#scoring > * {
+	padding: 0.5em;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#scoring .score input,
+#scoring .contract select {
+	margin-left: 1em;
+}
+
+/* Score card */
+
+#game_score {
+	display: table;
+}
+
+#game_score .player {
+	display: table-row;
+}
+
+#game_score .player .name {
+	display: table-cell;
+	padding-right: 2em;
+}
+
+#game_score .player .score {
+	display: table-cell;
+	padding-left: 1em;
+}
+
+.submission_notice.success {
+	color: #73A368;
+}
+
+.submission_notice.error {
+	color: #A53B3B;
+}
