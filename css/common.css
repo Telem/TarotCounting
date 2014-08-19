@@ -1,0 +1,42 @@
+.pseudolink {
+  display: inline;
+  color: blue;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+/* tab handling */
+.tab {
+  display:block;
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+
+/* table display */
+
+table td,
+table th {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+table th {
+    background: white;
+}
+
+table tr:nth-of-type(3n+1) {
+    background: #FFE6E6;
+}
+
+table tr:nth-of-type(3n+2) {
+    background: #FFE0C2;
+}
+
+table tr:nth-of-type(3n+3) {
+    background: #CCEBCC;
+}
+
+.roleperuser table tr:nth-of-type(3n) td {
+    border-bottom: 2px solid black;
+}
