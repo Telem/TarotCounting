@@ -21,6 +21,7 @@ $contracts = load_table('contracts', $dblink);
   <meta charset="utf-8">
 
   <title>Tarot scoring interface</title>
+  <link rel="stylesheet" href="css/common.css?v=1.0">
   <link rel="stylesheet" href="css/index.css?v=1.0">
 
   <!--[if lt IE 9]>
@@ -41,69 +42,9 @@ $contracts = load_table('contracts', $dblink);
 
 <body>
 
-<div class="upper">
-<div class="left-side">
-
-<div class="collapsible">
-<ul id="allplayers">
 <?php
-	foreach ($players as $player) {
-		echo "<li class='player' data-dbid='{$player['id']}'><span class='name'>{$player['name']}</span>: <span class='score'>0</span><ul class='tokens-container'></ul></li>";
-	}
+include 'templates/header.php';
 ?>
-</ul>
-<div class="collapse-controller">
-	<span class="collapsed-text">Show all players</span>
-	<span class="expanded-text">Show only active players</span>
-</div>
-</div>
-
-</div>
-
-<div class="right-side">
-
-<ul id="tokens" class="tokens">
-<?php
-//exclusive mean each player can have one token only of that exclusion-class
-//unique means one token can be assigned to one person only. non-unique means it can be duplicated for each player
-foreach($roles as $role) {
-	if ($role['name'] == 'Defender') {
-		continue;
-	}
-	$active = ($role['name'] == 'Callee')?' inactive':'';
-	echo "<li class='token role exclusive unique{$active}' data-exclusion-class='role' data-dbid='{$role['id']}'>{$role['name']}</li>";
-}
-foreach($bids as $bid) {
-	if ($bid['name'] == 'Pass') {
-		continue;
-	}
-	echo "<li class='token bid exclusive unique' data-exclusion-class='bid' data-dbid='{$bid['id']}'>{$bid['name']}</li>";
-}
-foreach($achievements as $achievement) {
-	$kindname = $achievement_kinds[$achievement['kind']]['name'];
-	$exclusive = ($kindname == 'slam')?' exclusive':'';
-	$unique = ($kindname == 'slam')?' unique':'';
-	echo "<li class='token achievement {$kindname}{$exclusive}{$unique}' data-dbid='{$achievement['id']}'>{$achievement['name']}</li>";
-}
-?>
-</ul>
-</div>
-</div>
-
-<div id='scoring'>
-<div class='left-side'>
-<div class="contract">Contract
-<select name="contract"><?php
-	foreach ($contracts as $contract) {
-		echo "<option value={$contract['value']} data-dbid={$contract['value']}>{$contract['name']}</option>";
-	}
-?></select></div>
-<div class="score">Score<input type="number" name="score" /></div>
-<input class="submitter" type="button" value="Send score" name="score_submission" />
-<div class="submission_notice"></div>
-</div>
-<div class='right-side'><ul id='game_score'></ul></div>
-</div>
 
 </body>
 </html>

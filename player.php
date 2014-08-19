@@ -23,17 +23,27 @@ while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
 
 $r = mysql_query("SELECT 
 	player_id,
-	AVG(Hand_Score(game_id)) AS avg_attack_hand_score
+	AVG(Hand_Score(game_id)) AS avg_attack_hand_score,
+	AVG(contract) AS avg_attack_contract
 	FROM game_players
+		JOIN games ON (game_players.game_id = games.id)
 	WHERE role = 1
 	GROUP BY player_id", $dblink);
 while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
 	$stats[$tuple['player_id']]['avg_attack_hand_score'] = $tuple['avg_attack_hand_score'];
+	$stats[$tuple['player_id']]['avg_attack_contract'] = $tuple['avg_attack_contract'];
 }
 
 $player_average = load_query("SELECT players.name AS Player, role AS Role, COUNT(game_id) AS ' #games', AVG(player_score) AS 'Average score', MAX(player_score) AS 'Best win', MIN(player_score) AS 'Worst loss', SUM(IF(player_score>0,player_score,0)) AS 'Cumulated High', SUM(IF(player_score<0,player_score,0)) AS 'Cumulated Low' FROM player_insight JOIN players ON (player_id = players.id) GROUP BY player_id, role", $dblink);
 $roles_averages = load_query("SELECT role AS Role, AVG(player_score) AS 'Average score' FROM player_insight GROUP BY role", $dblink);
 
+$player_bids = load_query("SELECT players.name AS Player, 
+	bids.name AS Bid, 
+	SUM(game_players.bid = bids.id) AS 'Count' 
+	FROM game_players 
+		JOIN bids ON (game_players.bid = bids.id) 
+		JOIN players ON (game_players.player_id = players.id)
+	GROUP BY game_players.player_id, game_players.bid", $dblink);
 
 ?>
 <!doctype html>
@@ -43,34 +53,58 @@ $roles_averages = load_query("SELECT role AS Role, AVG(player_score) AS 'Average
 <meta charset="utf-8">
 
 <title>Tarot player stats</title>
-<link rel="stylesheet" href="css/index.css?v=1.0">
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <script src="jquery/jquery-2.1.1.min.js"></script>
+  <script src="jquery-ui-1.11.0/jquery-ui.min.js"></script>
+  <script src="jquery/jquery.ui.touch-punch.min.js"></script>
+  <link rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.min.css">
+  
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
-<!--[if lt IE 9]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
-<script src="jquery/jquery-2.1.1.min.js"></script>
-<script src="jquery-ui-1.11.0/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.min.css">
-<script src="tarot.js"></script>
+  <link rel="stylesheet" href="css/common.css?v=1.0">
+  <script src="common.js"></script>
+  <link rel="stylesheet" href="css/index.css?v=1.0">
+
+  <script src="tarot.js"></script>
 </head>
 
 <body>
 
+<?php
+include 'templates/header.php';
+?>
+
+<div class="tab-summary"></div>
+
+<div class="tab" data-groupname="Scores">
 <table>
-<thead><tr><th>Player</th><th>All time score</th><th>Games played</th><th>Attacks</th><th>Defenses</th><th>Average hand score when attacking</th></tr></thead>
+<thead><tr><th>Player</th><th>All time score</th><th>Games played</th><th>Attacks</th><th>Defenses</th><th>Average hand score when attacking</th><th>Average contract when attacking</th></tr></thead>
 <tbody>
 <?php 
 foreach ($stats as $player_id => $stat) {
-	echo "<tr><td>{$stat['player']}</td><td>{$stat['player_score']}</td><td>{$stat['games_count']}</td><td>{$stat['attacks']}</td><td>{$stat['defenses']}</td><td>{$stat['avg_attack_hand_score']}</td></tr>";
+	echo "<tr><td>{$stat['player']}</td><td>{$stat['player_score']}</td><td>{$stat['games_count']}</td><td>{$stat['attacks']}</td><td>{$stat['defenses']}</td><td>{$stat['avg_attack_hand_score']}</td><td>{$stat['avg_attack_contract']}</td></tr>";
 }
 ?>
 </tbody>
 </table>
+</div>
 
+<div class="tab" data-groupname="Averages by roles">
 <?php
-echo table_to_html($player_average);
+echo '<div class="roleperuser">'.table_to_html($player_average).'</div>';
 echo table_to_html($roles_averages);
 ?>
+</div>
+
+<div class="tab" data-groupname="Bids">
+<?php
+echo table_to_html($player_bids);
+?>
+</div>
 
 </body>
 </html>

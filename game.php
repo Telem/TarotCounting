@@ -21,6 +21,7 @@ $contracts = load_table('contracts', $dblink);
   <meta charset="utf-8">
 
   <title>Tarot scoring interface</title>
+  <link rel="stylesheet" href="css/common.css?v=1.0">
   <link rel="stylesheet" href="css/game.css?v=1.0">
   <meta name="viewport" content="width=device-width">
 
@@ -41,6 +42,10 @@ $contracts = load_table('contracts', $dblink);
 </head>
 
 <body>
+
+<?php
+include 'templates/header.php';
+?>
 
 <ul id="allplayers">
 <?php

@@ -25,18 +25,28 @@ while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
 <meta charset="utf-8">
 
 <title>Tarot today's scores</title>
-<link rel="stylesheet" href="css/index.css?v=1.0">
+  <link rel="stylesheet" href="css/common.css?v=1.0">
+  <link rel="stylesheet" href="css/index.css?v=1.0">
 
-<!--[if lt IE 9]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
-<script src="jquery/jquery-2.1.1.min.js"></script>
-<script src="jquery-ui-1.11.0/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.min.css">
-<script src="tarot.js"></script>
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <script src="jquery/jquery-2.1.1.min.js"></script>
+  <script src="jquery-ui-1.11.0/jquery-ui.min.js"></script>
+  <script src="jquery/jquery.ui.touch-punch.min.js"></script>
+  <link rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.min.css">
+  
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="tarot.js"></script>
 </head>
 
 <body>
+
+<?php
+include 'templates/header.php';
+?>
 
 <h1>Today's score</h1>
 
