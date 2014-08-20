@@ -25,18 +25,22 @@ table th {
     background: white;
 }
 
-table tr:nth-of-type(3n+1) {
-    background: #FFE6E6;
-}
-
-table tr:nth-of-type(3n+2) {
+table tr:nth-of-type(2n+1) {
     background: #FFE0C2;
 }
-
-table tr:nth-of-type(3n+3) {
+table tr:nth-of-type(2n+2) {
     background: #CCEBCC;
 }
 
+.roleperuser table tr:nth-of-type(3n+1) {
+    background: #FFE6E6;
+}
+.roleperuser table tr:nth-of-type(3n+2) {
+    background: #FFE0C2;
+}
+.roleperuser table tr:nth-of-type(3n+3) {
+    background: #CCEBCC;
+}
 .roleperuser table tr:nth-of-type(3n) td {
     border-bottom: 2px solid black;
 }
