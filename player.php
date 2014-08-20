@@ -106,6 +106,81 @@ echo table_to_html($player_bids);
 ?>
 </div>
 
+<div class="tab" data-groupname="Daily score scatter">
+<?php
+
+require_once 'SVGGraph/SVGGraph.php';
+
+$dates = load_query("SELECT DISTINCT DATE(date) AS 'date' FROM games", $dblink);
+$graphdata = load_query("SELECT DATE(date) AS 'date', players.name AS 'Player', SUM(player_score) AS daily_score
+	FROM player_insight 
+		JOIN games ON (games.id = player_insight.game_id)
+		JOIN players ON (players.id = player_insight.player_id)
+	GROUP BY DATE(date), Player
+	ORDER BY date ASC, Player ASC", $dblink);
+
+$graphValues = array();
+foreach ($dates as $daterow) {
+	$graphValues['baseline'][$daterow['date']] = 0;
+}
+foreach ($graphdata as $row) {
+	$graphValues[$row['Player']][$row['date']] = $row['daily_score'];
+}
+$settings = array(
+	'legend_entries' => array_keys($graphValues),
+	'legend_position' => 'outer right -5 40'
+);
+$graph = new SVGGraph(640, 480,$settings);
+$graph->Values($graphValues);
+echo $graph->Fetch('MultiScatterGraph', false);
+echo $graph->FetchJavascript();
+?>
+</div>
+
+<div class="tab" data-groupname="Cumulated score graph">
+<?php
+
+require_once 'SVGGraph/SVGGraph.php';
+
+$dates = load_query("SELECT DISTINCT DATE(date) AS 'date' FROM games", $dblink);
+$graphdata = load_query("SELECT DATE(date) AS 'date', players.name AS 'Player', SUM(player_score) AS daily_score
+	FROM player_insight 
+		JOIN games ON (games.id = player_insight.game_id)
+		JOIN players ON (players.id = player_insight.player_id)
+	GROUP BY players.name, DATE(date)
+	ORDER BY Player ASC, date ASC", $dblink);
+
+$graphValues = array();
+foreach ($dates as $daterow) {
+	$graphValues['baseline'][$daterow['date']] = 0;
+}
+$currentPlayer = null;
+foreach ($graphdata as $row) {
+	if ($row['Player'] != $currentPlayer) {
+		if (isset($currentGraphLine)) {
+			$graphValues[$currentPlayer] = $currentGraphLine;
+		}
+		$currentGraphLine = array();
+		$currentPlayer = $row['Player'];
+		$cumulatedScore = 0;
+	}
+	$currentGraphLine[$row['date']] = $cumulatedScore = $row['daily_score'] + $cumulatedScore;
+}
+if (isset($currentGraphLine)) {
+	$graphValues[$currentPlayer] = $currentGraphLine;
+}
+
+$settings = array(
+	'legend_entries' => array_keys($graphValues),
+	'legend_position' => 'outer right -5 40'
+);
+$graph = new SVGGraph(640, 480,$settings);
+$graph->Values($graphValues);
+echo $graph->Fetch('MultiLineGraph', false);
+echo $graph->FetchJavascript();
+?>
+</div>
+
 </body>
 </html>
 
