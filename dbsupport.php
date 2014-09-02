@@ -55,3 +55,36 @@ function table_to_html(array $rows) {
 	return $result;
 }
 
+/**
+ * Converts rows for games with game_id, date, contract, score, player_name, player_score to an array with a column for each player
+ */
+function score_array($game_rows) {
+	$result = array();
+	foreach ($game_rows as $r) {
+		$result[$r['game_id']]['game'] = "{$r['date']} - {$r['score']} for {$r['contract']}";
+		$result[$r['game_id']][$r['player_name']] = $r['player_score'];
+	}
+	foreach ($result as $k => $r) {
+		$summary = $r['game'];
+		unset($r['game']);
+		ksort($r);
+		$result[$k] = array_merge(array('game' => $summary), $r);
+	}
+	return $result;
+}
+
+function accumulate_rows($rows, array $keysToAccumulate) {
+	$result = unserialize(serialize($rows));
+	$lastRow = array();
+	foreach ($result as &$r) {
+		foreach ($r as $rk => &$rv) {
+			if (in_array($rk, $keysToAccumulate)) {
+				$rv += @$lastRow[$rk];
+			}
+		}
+		$lastRow = $r;
+	}
+	return $result;
+}
+
+

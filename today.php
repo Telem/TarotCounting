@@ -5,17 +5,18 @@ require_once 'dbsupport.php';
 
 $dblink = tarot_connect();
 
-$r = mysql_query("SELECT player, SUM(player_score) as player_score FROM game_insight WHERE DATE(date) = DATE(NOW()) GROUP BY player_id ORDER BY player_score DESC", $dblink);
-$scores = array();
-while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
-	$scores[] = $tuple;
-}
+$allTimeScores = load_query("SELECT player, SUM(player_score) as player_score FROM game_insight GROUP BY player_id ORDER BY player_score DESC", $dblink);
 
-$r = mysql_query("SELECT player, SUM(player_score) as player_score FROM game_insight GROUP BY player_id ORDER BY player_score DESC", $dblink);
-$allTimeScores = array();
-while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
-	$allTimeScores[] = $tuple;
-}
+$todayScoreTable = score_array(load_query("SELECT game_id, TIME(date) AS date, contract, score, players.name AS player_name, Player_Game_Score(game_id, player_id) AS player_score
+	FROM game_players
+		JOIN games ON (game_players.game_id = games.id)
+		JOIN players ON (game_players.player_id = players.id)
+	WHERE DATE(date) = DATE(NOW())
+	ORDER BY games.date ASC", $dblink));
+//take the columns and remove the 'game' header (first) to find the player names
+$playersKeys = array_keys(current($todayScoreTable));
+unset($playersKeys[0]);
+$todayScoreTally = accumulate_rows($todayScoreTable, $playersKeys);
 
 ?>
 <!doctype html>
@@ -49,30 +50,17 @@ include 'templates/header.php';
 ?>
 
 <h1>Today's score</h1>
-
-<table>
-<thead><tr><th>Player</th><th>Score</th></tr></thead>
-<tbody>
-<?php 
-foreach ($scores as $score) {
-	echo "<tr><td>{$score['player']}</td><td>{$score['player_score']}</td></tr>";
-}
+<?php
+echo "<h2>Game by game score</h2>";
+echo table_to_html($todayScoreTable);
+echo "<h2>Game by game tally</h2>";
+echo table_to_html($todayScoreTally);
 ?>
-</tbody>
-</table>
 
 <h1>All time scores</h1>
-
-<table>
-<thead><tr><th>Player</th><th>Score</th></tr></thead>
-<tbody>
-<?php 
-foreach ($allTimeScores as $score) {
-	echo "<tr><td>{$score['player']}</td><td>{$score['player_score']}</td></tr>";
-}
+<?php
+echo table_to_html($allTimeScores);
 ?>
-</tbody>
-</table>
 
 </body>
 </html>
