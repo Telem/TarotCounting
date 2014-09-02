@@ -45,6 +45,18 @@ $player_bids = load_query("SELECT players.name AS Player,
 		JOIN players ON (game_players.player_id = players.id)
 	GROUP BY game_players.player_id, game_players.bid", $dblink);
 
+$players_attack_stats = load_query("
+	SELECT players.name AS player, 
+		SUM(score < contract) AS lost, SUM(score >= contract) as won, SUM(score >= contract) / COUNT(*) AS win_ratio, 
+		SUM(contract = 36) AS '3 bouts', SUM(contract = 41) AS '2 bouts', SUM(contract = 51) AS '1 bout', SUM(contract = 56) AS 'no bout'
+	FROM game_players 
+		JOIN games on (games.id = game_players.game_id) 
+		JOIN bids on (game_players.bid = bids.id) 
+		JOIN roles on (game_players.role = roles.id) 
+		JOIN players on (game_players.player_id = players.id) 
+	WHERE game_players.role = 1
+	GROUP BY player", $dblink);
+
 ?>
 <!doctype html>
 
@@ -91,6 +103,13 @@ foreach ($stats as $player_id => $stat) {
 ?>
 </tbody>
 </table>
+</div>
+
+
+<div class="tab" data-groupname="Attack statistics">
+<?php
+echo table_to_html($players_attack_stats);
+?>
 </div>
 
 <div class="tab" data-groupname="Averages by roles">
@@ -172,7 +191,8 @@ if (isset($currentGraphLine)) {
 
 $settings = array(
 	'legend_entries' => array_keys($graphValues),
-	'legend_position' => 'outer right -5 40'
+	'legend_position' => 'outer right -5 40',
+	'legend_autohide' => true,
 );
 $graph = new SVGGraph(640, 480,$settings);
 $graph->Values($graphValues);
