@@ -1,8 +1,8 @@
 <?php
 
 function tarot_connect() {
-	$settings = parse_ini_file('tarotdb.ini');
-	$dblink = mysql_connect($settings['host'], $settings['user'], $settings['password']);
+	include_once "dbcredentials.php";
+	$dblink = mysql_connect($host, $user, $password);
 	mysql_set_charset('utf8', $dblink);
 	mysql_select_db('tarot', $dblink);
 	return $dblink;
