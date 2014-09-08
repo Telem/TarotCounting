@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `games` (
   PRIMARY KEY (`id`),
   KEY `FK_games_contracts` (`contract`),
   CONSTRAINT `FK_games_contracts` FOREIGN KEY (`contract`) REFERENCES `contracts` (`value`)
-) ENGINE=InnoDB AUTO_INCREMENT=90 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Dumping structure for table tarot.game_achievements
 CREATE TABLE IF NOT EXISTS `game_achievements` (
@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS `game_players` (
   CONSTRAINT `FK_game_players_roles` FOREIGN KEY (`role`) REFERENCES `roles` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+
 -- Dumping structure for function tarot.Hand_Score
 DELIMITER //
 CREATE DEFINER=`root`@`localhost` FUNCTION `Hand_Score`(`game_id` INT) RETURNS int(11)
@@ -192,6 +193,18 @@ BEGIN
 	
 		
 	RETURN (bid_base + game_diff + COALESCE(achievement_base, 0) + COALESCE(petit_au_bout, 0)) * bid_multiplier + COALESCE(achievement_bonus, 0);
+END//
+DELIMITER ;
+
+
+-- Dumping structure for function tarot.In_Current_Season
+DELIMITER //
+CREATE DEFINER=`root`@`localhost` FUNCTION `In_Current_Season`(`date` DATE) RETURNS int(11)
+BEGIN
+	DECLARE start_date DATE;
+	DECLARE end_date DATE;
+	SELECT `start`, `end` FROM seasons ORDER BY `end` DESC LIMIT 1 INTO start_date, end_date;
+	return date >= start_date AND date < end_date;
 END//
 DELIMITER ;
 
@@ -318,8 +331,8 @@ CREATE TABLE IF NOT EXISTS `player_lifetime_achievements` (
   `achievement_id` int(11) DEFAULT NULL,
   KEY `FK__players` (`player_id`),
   KEY `FK__lifetime_achievements` (`achievement_id`),
-  CONSTRAINT `FK__players` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE,
-  CONSTRAINT `FK__lifetime_achievements` FOREIGN KEY (`achievement_id`) REFERENCES `lifetime_achievements` (`id`) ON UPDATE CASCADE
+  CONSTRAINT `FK__lifetime_achievements` FOREIGN KEY (`achievement_id`) REFERENCES `lifetime_achievements` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `FK__players` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Dumping data for table tarot.player_lifetime_achievements: ~0 rows (approximately)
@@ -373,6 +386,22 @@ INSERT IGNORE INTO `role_shares` (`role_id`, `player_count`, `callee_count`, `co
 	(3, 5, 1, 1, -1),
 	(3, 6, 1, 2, -2);
 /*!40000 ALTER TABLE `role_shares` ENABLE KEYS */;
+
+
+-- Dumping structure for table tarot.seasons
+CREATE TABLE IF NOT EXISTS `seasons` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start` date NOT NULL,
+  `end` date NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Dumping data for table tarot.seasons: ~1 rows (approximately)
+/*!40000 ALTER TABLE `seasons` DISABLE KEYS */;
+INSERT IGNORE INTO `seasons` (`id`, `start`, `end`) VALUES
+	(1, '2014-07-25', '2014-08-25'),
+	(2, '2014-08-26', '2014-09-25');
+/*!40000 ALTER TABLE `seasons` ENABLE KEYS */;
 
 
 -- Dumping structure for view tarot.game_insight
