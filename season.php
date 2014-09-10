@@ -50,7 +50,10 @@ $player_average = load_query("SELECT players.name AS Player,
 		MAX(player_score) AS 'Best win', 
 		MIN(player_score) AS 'Worst loss', 
 		SUM(IF(player_score>0,player_score,0)) AS 'Cumulated High', 
-		SUM(IF(player_score<0,player_score,0)) AS 'Cumulated Low' 
+		SUM(IF(player_score<0,player_score,0)) AS 'Cumulated Low',
+		AVG(hand_score) AS 'Average hand score', 
+		MAX(hand_score) AS 'Best hand score', 
+		MIN(hand_score) AS 'Worst hand score'
 	FROM player_insight 
 		JOIN players ON (player_id = players.id) 
 		JOIN games ON (player_insight.game_id = games.id)
@@ -74,16 +77,20 @@ $player_bids = load_query("SELECT players.name AS Player,
 
 $players_attack_stats = load_query("
 	SELECT players.name AS player, 
-		SUM(score < contract) AS lost, SUM(score >= contract) as won, SUM(score >= contract) / COUNT(*) AS win_ratio, 
-		SUM(contract = 36) AS '3 bouts', SUM(contract = 41) AS '2 bouts', SUM(contract = 51) AS '1 bout', SUM(contract = 56) AS 'no bout'
+		contracts.name AS contract,
+		SUM(score >= contract) as won, 
+		SUM(score < contract) AS lost, 
+		SUM(score >= contract) / COUNT(*) AS win_ratio
 	FROM game_players 
 		JOIN games on (games.id = game_players.game_id) 
 		JOIN bids on (game_players.bid = bids.id) 
 		JOIN roles on (game_players.role = roles.id) 
 		JOIN players on (game_players.player_id = players.id) 
+		JOIN contracts on (games.contract = contracts.value) 
 	WHERE game_players.role = 1 
 		AND In_Current_Season(DATE(games.date))
-	GROUP BY player", $dblink);
+	GROUP BY player, games.contract
+	ORDER BY player ASC, games.contract DESC", $dblink);
 
 ?>
 <!doctype html>
