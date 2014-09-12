@@ -36,17 +36,24 @@ function load_query($query, $dbLink = null) {
 	return $result;
 }
 
-function table_to_html(array $rows) {
+function table_to_html(array $rows, array $columnNames = null) {
 	$result = '';
 	$headers = current($rows);
 	$result .= "<table><thead><tr>";
 	foreach ($headers as $header => $bla) {
-		$result .= "<th>{$header}</th>";
+		if ($columnNames && !isset($columnNames[$header])) {
+			continue;
+		}
+		$headerName = ($columnNames)?$columnNames[$header]:$header;
+		$result .= "<th>{$headerName}</th>";
 	}
 	$result .= "</tr></thead><tbody>";
 	foreach ($rows as $row) {
 		$result .= "<tr>";
-		foreach ($row as $val) {
+		foreach ($row as $key => $val) {
+			if ($columnNames && !isset($columnNames[$key])) {
+				continue;
+			}
 			$result .= "<td>{$val}</td>";
 		}
 		$result .= "</tr>";

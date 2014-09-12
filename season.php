@@ -12,21 +12,22 @@ $seasonEnd = $r[0]['end'];
 $r = mysql_query("SELECT 
 	player_id,
 	players.name AS player, 
-	COUNT(game_id) AS games_count,
 	SUM(Player_Game_Score(game_id, player_id)) AS player_score, 
+	COUNT(game_id) AS games_count,
 	SUM(role = 1) AS attacks, 
-	SUM(role = 2) AS defenses
+	SUM(role = 2) AS defenses,
+	AVG(bid != 1) AS `% bids`
 	FROM game_players 
 		JOIN players ON (game_players.player_id = players.id)
 		JOIN games ON (game_players.game_id = games.id)
 	WHERE In_Current_Season(DATE(games.date))
 	GROUP BY player_id 
 	ORDER BY player_score DESC", $dblink);
-$stats = array();
+$overview_stats = array();
 while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
-	$stats[$tuple['player_id']] = $tuple;
-	$stats[$tuple['player_id']]['avg_attack_hand_score'] = NULL;
-	$stats[$tuple['player_id']]['avg_attack_contract'] = NULL;
+	$overview_stats[$tuple['player_id']] = $tuple;
+	$overview_stats[$tuple['player_id']]['avg_attack_hand_score'] = NULL;
+	$overview_stats[$tuple['player_id']]['avg_attack_contract'] = NULL;
 }
 
 $r = mysql_query("SELECT 
@@ -39,11 +40,12 @@ $r = mysql_query("SELECT
 		AND role = 1
 	GROUP BY player_id", $dblink);
 while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
-	$stats[$tuple['player_id']]['avg_attack_hand_score'] = $tuple['avg_attack_hand_score'];
-	$stats[$tuple['player_id']]['avg_attack_contract'] = $tuple['avg_attack_contract'];
+	$overview_stats[$tuple['player_id']]['avg_attack_hand_score'] = $tuple['avg_attack_hand_score'];
+	$overview_stats[$tuple['player_id']]['avg_attack_contract'] = $tuple['avg_attack_contract'];
 }
 
-$player_average = load_query("SELECT players.name AS Player, 
+$player_average = load_query("
+	SELECT players.name AS Player, 
 		role AS Role, 
 		COUNT(game_id) AS ' #games', 
 		AVG(player_score) AS 'Average score', 
@@ -52,22 +54,24 @@ $player_average = load_query("SELECT players.name AS Player,
 		SUM(IF(player_score>0,player_score,0)) AS 'Cumulated High', 
 		SUM(IF(player_score<0,player_score,0)) AS 'Cumulated Low',
 		AVG(hand_score) AS 'Average hand score', 
-		MAX(hand_score) AS 'Best hand score', 
+		MAX(IF(player_score>0,hand_score,0)) AS 'Best hand score', 
 		MIN(hand_score) AS 'Worst hand score'
 	FROM player_insight 
 		JOIN players ON (player_id = players.id) 
 		JOIN games ON (player_insight.game_id = games.id)
 	WHERE In_Current_Season(DATE(games.date))
 	GROUP BY player_id, role", $dblink);
-$roles_averages = load_query("SELECT role AS Role, AVG(player_score) AS 'Average score' 
+$roles_averages = load_query("
+	SELECT role AS Role, AVG(player_score) AS 'Average score' 
 	FROM player_insight 
 		JOIN games ON (player_insight.game_id = games.id)
 	WHERE In_Current_Season(DATE(date)) 
 	GROUP BY role", $dblink);
 
-$player_bids = load_query("SELECT players.name AS Player, 
-	bids.name AS Bid, 
-	SUM(game_players.bid = bids.id) AS 'Count' 
+$player_bids = load_query("
+	SELECT players.name AS Player, 
+		bids.name AS Bid, 
+		SUM(game_players.bid = bids.id) AS 'Count' 
 	FROM game_players 
 		JOIN bids ON (game_players.bid = bids.id) 
 		JOIN players ON (game_players.player_id = players.id)
@@ -78,9 +82,11 @@ $player_bids = load_query("SELECT players.name AS Player,
 $players_attack_stats = load_query("
 	SELECT players.name AS player, 
 		contracts.name AS contract,
+		SUM(score >= contract) / COUNT(*) AS win_ratio,
 		SUM(score >= contract) as won, 
+		AVG(IF(score>=contract,score - contract,NULL)) AS 'average won by',
 		SUM(score < contract) AS lost, 
-		SUM(score >= contract) / COUNT(*) AS win_ratio
+		AVG(IF(score<contract,contract - score,NULL)) AS 'average lost by'
 	FROM game_players 
 		JOIN games on (games.id = game_players.game_id) 
 		JOIN bids on (game_players.bid = bids.id) 
@@ -130,16 +136,19 @@ include 'templates/header.php';
 <div class="tab-summary"></div>
 
 <div class="tab" data-groupname="Scores">
-<table>
-<thead><tr><th>Player</th><th>All time score</th><th>Games played</th><th>Attacks</th><th>Defenses</th><th>Average hand score when attacking</th><th>Average contract when attacking</th></tr></thead>
-<tbody>
 <?php 
-foreach ($stats as $player_id => $stat) {
-	echo "<tr><td>{$stat['player']}</td><td>{$stat['player_score']}</td><td>{$stat['games_count']}</td><td>{$stat['attacks']}</td><td>{$stat['defenses']}</td><td>{$stat['avg_attack_hand_score']}</td><td>{$stat['avg_attack_contract']}</td></tr>";
-}
+echo table_to_html($overview_stats, array(
+	'player' => 'Player', 
+	'games_count' => 'Games played',
+	'player_score' => 'Score', 
+	'attacks' => 'Attacks', 
+	'defenses' => 'Defenses',
+	'% bids' => '% games with a bid',
+	'avg_attack_hand_score' => 'Average hand score when attacking',
+	'avg_attack_contract' => 'Average contract when attacking',
+));
+
 ?>
-</tbody>
-</table>
 </div>
 
 
