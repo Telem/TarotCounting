@@ -7,16 +7,22 @@ $dblink = tarot_connect();
 
 $allTimeScores = load_query("SELECT player, SUM(player_score) as player_score FROM game_insight GROUP BY player_id ORDER BY player_score DESC", $dblink);
 
+$players = load_query("
+	SELECT DISTINCT players.name 
+	FROM players 
+		JOIN game_players ON (players.id = game_players.player_id) 
+		JOIN games ON (game_players.game_id = games.id)
+	WHERE DATE(games.date) = DATE(NOW())", $dblink);
+$players = call_user_func_array('array_merge', $players);
+
 $todayScoreTable = score_array(load_query("SELECT game_id, TIME(date) AS date, contract, score, players.name AS player_name, Player_Game_Score(game_id, player_id) AS player_score
 	FROM game_players
 		JOIN games ON (game_players.game_id = games.id)
 		JOIN players ON (game_players.player_id = players.id)
 	WHERE DATE(date) = DATE(NOW())
-	ORDER BY games.date ASC", $dblink));
+	ORDER BY games.date ASC", $dblink), $players);
 //take the columns and remove the 'game' header (first) to find the player names
-$playersKeys = array_keys(current($todayScoreTable));
-unset($playersKeys[0]);
-$todayScoreTally = accumulate_rows($todayScoreTable, $playersKeys);
+$todayScoreTally = accumulate_rows($todayScoreTable, $players);
 
 ?>
 <!doctype html>
@@ -47,6 +53,13 @@ $todayScoreTally = accumulate_rows($todayScoreTable, $playersKeys);
 
 <?php
 include 'templates/header.php';
+
+echo '<!--'.PHP_EOL;
+print_r($players);
+print_r($todayScoreTable);
+print_r($todayScoreTally);
+echo '-->'.PHP_EOL;
+
 ?>
 
 <h1>Today's score</h1>
