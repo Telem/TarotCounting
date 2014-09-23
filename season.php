@@ -71,7 +71,10 @@ $roles_averages = load_query("
 $player_bids = load_query("
 	SELECT players.name AS Player, 
 		bids.name AS Bid, 
-		SUM(game_players.bid = bids.id) AS 'Count' 
+		SUM(game_players.bid = bids.id) AS 'Count', 
+		SUM(score >= contract) AS 'won',
+		SUM(score < contract) AS 'lost',
+		AVG(score >= contract) AS 'ratio'
 	FROM game_players 
 		JOIN bids ON (game_players.bid = bids.id) 
 		JOIN players ON (game_players.player_id = players.id)
