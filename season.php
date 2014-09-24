@@ -74,7 +74,9 @@ $player_bids = load_query("
 		SUM(game_players.bid = bids.id) AS 'Count', 
 		SUM(score >= contract) AS 'won',
 		SUM(score < contract) AS 'lost',
-		AVG(score >= contract) AS 'ratio'
+		AVG(score >= contract) AS 'win ratio',
+		AVG(IF(score>=contract,score - contract,NULL)) AS 'average won by',
+		AVG(IF(score<contract,contract - score,NULL)) AS 'average lost by'
 	FROM game_players 
 		JOIN bids ON (game_players.bid = bids.id) 
 		JOIN players ON (game_players.player_id = players.id)
@@ -85,7 +87,7 @@ $player_bids = load_query("
 $players_attack_stats = load_query("
 	SELECT players.name AS player, 
 		contracts.name AS contract,
-		SUM(score >= contract) / COUNT(*) AS win_ratio,
+		SUM(score >= contract) / COUNT(*) AS 'win ratio',
 		SUM(score >= contract) as won, 
 		AVG(IF(score>=contract,score - contract,NULL)) AS 'average won by',
 		SUM(score < contract) AS lost, 
