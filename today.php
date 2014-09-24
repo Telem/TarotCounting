@@ -8,12 +8,17 @@ $dblink = tarot_connect();
 $allTimeScores = load_query("SELECT player, SUM(player_score) as player_score FROM game_insight GROUP BY player_id ORDER BY player_score DESC", $dblink);
 
 $players = load_query("
-	SELECT DISTINCT players.name 
+	SELECT DISTINCT players.name AS name
 	FROM players 
 		JOIN game_players ON (players.id = game_players.player_id) 
 		JOIN games ON (game_players.game_id = games.id)
 	WHERE DATE(games.date) = DATE(NOW())", $dblink);
-$players = call_user_func_array('array_merge', $players);
+$newPlayers = array();
+foreach($players as $r) {
+	$newPlayers[] = $r['name'];
+}
+$players = $newPlayers;
+unset($newPlayers);
 
 $todayScoreTable = score_array(load_query("SELECT game_id, TIME(date) AS date, contract, score, players.name AS player_name, Player_Game_Score(game_id, player_id) AS player_score
 	FROM game_players
