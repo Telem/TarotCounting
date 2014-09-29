@@ -81,7 +81,8 @@ $player_bids = load_query("
 		JOIN bids ON (game_players.bid = bids.id) 
 		JOIN players ON (game_players.player_id = players.id)
 		JOIN games ON (game_players.game_id = games.id)
-	WHERE In_Current_Season(DATE(games.date))
+	WHERE game_players.role = 1 
+		AND In_Current_Season(DATE(games.date))
 	GROUP BY game_players.player_id, game_players.bid", $dblink);
 
 $players_attack_stats = load_query("
