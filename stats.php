@@ -232,12 +232,12 @@ require_once 'SVGGraph/SVGGraph.php';
 
 $dates = load_query("SELECT DISTINCT DATE(date) AS 'date' 
 	FROM games
-	WHERE In_Current_Season(DATE(games.date))", $dblink);
+	WHERE ${periodMatcher}", $dblink);
 $graphdata = load_query("SELECT DATE(date) AS 'date', players.name AS 'Player', SUM(player_score) AS daily_score
 	FROM player_insight 
 		JOIN games ON (games.id = player_insight.game_id)
 		JOIN players ON (players.id = player_insight.player_id)
-	WHERE In_Current_Season(DATE(date)) 
+	WHERE ${periodMatcher}
 	GROUP BY DATE(date), Player
 	ORDER BY date ASC, Player ASC", $dblink);
 
@@ -266,12 +266,12 @@ require_once 'SVGGraph/SVGGraph.php';
 
 $dates = load_query("SELECT DISTINCT DATE(date) AS 'date' 
 	FROM games 
-	WHERE In_Current_Season(DATE(games.date))", $dblink);
+	WHERE ${periodMatcher}", $dblink);
 $graphdata = load_query("SELECT DATE(date) AS 'date', players.name AS 'Player', SUM(player_score) AS daily_score
 	FROM player_insight 
 		JOIN games ON (games.id = player_insight.game_id)
 		JOIN players ON (players.id = player_insight.player_id)
-	WHERE In_Current_Season(DATE(date)) 
+	WHERE ${periodMatcher}
 	GROUP BY players.name, DATE(date)
 	ORDER BY Player ASC, date ASC", $dblink);
 

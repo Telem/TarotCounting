@@ -4,24 +4,23 @@ require_once 'dbsupport.php';
 //variables exported by this script
 $periodStart = $periodEnd = $periodMatcher = null;
 
+$periodDBLink = tarot_connect();
 
 switch (@$_GET['period']) {
 	case 'season':
-		$periodDBLink = tarot_connect();
 		$r = load_query("SELECT `start`, `end` FROM seasons ORDER BY `end` DESC LIMIT 1", $periodDBLink);
-		mysql_close($periodDBLink);
 		$periodStart = "'".$r[0]['start']."'";
 		$periodEnd = "'".$r[0]['end']."'";
 		break;
 	default:
 		$matches = array();
 		preg_match(',([0-9-]+)?/([0-9-]+)?,', $_GET['period'], $matches);
-		$startStr = mysql_real_escape_string($matches[1]);
-		$endStr = mysql_real_escape_string($matches[2]);
-		if ($matches[1]) {
+		$startStr = mysql_real_escape_string(@$matches[1], $periodDBLink);
+		$endStr = mysql_real_escape_string(@$matches[2], $periodDBLink);
+		if (@$matches[1]) {
 			$periodStart = "'".$startStr."'";
 		}
-		if ($matches[2]) {
+		if (@$matches[2]) {
 			$periodEnd = "'".$endStr."'";
 		}
 		break;
@@ -45,5 +44,6 @@ if (count($periodStmts) == 0) {
 }
 $periodMatcher = implode(" AND ", $periodStmts);
 
+mysql_close($periodDBLink);
 
 ?>
