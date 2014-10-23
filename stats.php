@@ -5,9 +5,44 @@ require_once 'dbsupport.php';
 
 $dblink = tarot_connect();
 
-$r = load_query("SELECT `start`, `end` FROM seasons ORDER BY `end` DESC LIMIT 1", $dblink);
-$seasonStart = $r[0]['start'];
-$seasonEnd = $r[0]['end'];
+
+$periodStart = null;
+$periodEnd = null;
+switch (@$_GET['period']) {
+	case 'season':
+		$r = load_query("SELECT `start`, `end` FROM seasons ORDER BY `end` DESC LIMIT 1", $dblink);
+		$periodStart = $r[0]['start'];
+		$periodEnd = $r[0]['end'];
+		break;
+	default:
+		$matches = array();
+		preg_match(',([0-9-]+)?/([0-9-]+)?,', $_GET['period'], $matches);
+		$startStr = mysql_real_escape_string($matches[1]);
+		$endStr = mysql_real_escape_string($matches[2]);
+		if ($matches[1]) {
+			$periodStart = $startStr;
+		}
+		if ($matches[2]) {
+			$periodEnd = $endStr;
+		}
+		break;
+	case null:
+	case 'alltime':
+		break;
+}
+
+$periodStmts = array();
+if ($periodStart) {
+	$periodStmts[] = "DATE(date) > DATE('".$periodStart."')";
+}
+if ($periodEnd) {
+	$periodStmts[] = "DATE(date) < DATE('".$periodEnd."')";
+}
+if (count($periodStmts) == 0) {
+	$periodStmts[] = "TRUE";
+}
+$periodMatcher = implode(" AND ", $periodStmts);
+
 
 $r = mysql_query("SELECT 
 	player_id,
@@ -20,7 +55,7 @@ $r = mysql_query("SELECT
 	FROM game_players 
 		JOIN players ON (game_players.player_id = players.id)
 		JOIN games ON (game_players.game_id = games.id)
-	WHERE In_Current_Season(DATE(games.date))
+	WHERE ${periodMatcher}
 	GROUP BY player_id 
 	ORDER BY player_score DESC", $dblink);
 $overview_stats = array();
@@ -36,7 +71,7 @@ $r = mysql_query("SELECT
 	AVG(contract) AS avg_attack_contract
 	FROM game_players
 		JOIN games ON (game_players.game_id = games.id)
-	WHERE In_Current_Season(DATE(games.date))
+	WHERE ${periodMatcher}
 		AND role = 1
 	GROUP BY player_id", $dblink);
 while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
@@ -59,13 +94,13 @@ $player_average = load_query("
 	FROM player_insight 
 		JOIN players ON (player_id = players.id) 
 		JOIN games ON (player_insight.game_id = games.id)
-	WHERE In_Current_Season(DATE(games.date))
+	WHERE ${periodMatcher}
 	GROUP BY player_id, role", $dblink);
 $roles_averages = load_query("
 	SELECT role AS Role, AVG(player_score) AS 'Average score' 
 	FROM player_insight 
 		JOIN games ON (player_insight.game_id = games.id)
-	WHERE In_Current_Season(DATE(date)) 
+	WHERE ${periodMatcher}
 	GROUP BY role", $dblink);
 
 $player_bids = load_query("
@@ -82,7 +117,7 @@ $player_bids = load_query("
 		JOIN players ON (game_players.player_id = players.id)
 		JOIN games ON (game_players.game_id = games.id)
 	WHERE game_players.role = 1 
-		AND In_Current_Season(DATE(games.date))
+		AND ${periodMatcher}
 	GROUP BY game_players.player_id, game_players.bid", $dblink);
 
 $players_attack_stats = load_query("
@@ -100,9 +135,26 @@ $players_attack_stats = load_query("
 		JOIN players on (game_players.player_id = players.id) 
 		JOIN contracts on (games.contract = contracts.value) 
 	WHERE game_players.role = 1 
-		AND In_Current_Season(DATE(games.date))
+		AND ${periodMatcher}
 	GROUP BY player, games.contract
 	ORDER BY player ASC, games.contract DESC", $dblink);
+
+$self_calling = load_query("
+	SELECT date, players.name AS player, bids.name AS bid, score, contract
+	FROM game_players
+		JOIN games ON (game_players.game_id = games.id)
+		JOIN bids ON (game_players.bid = bids.id)
+		JOIN players ON (game_players.player_id = players.id)
+	WHERE 
+		game_id IN (
+		SELECT game_id
+			FROM game_players 
+			GROUP BY game_id
+				HAVING COUNT(player_id) >= 5 
+				AND SUM(role = 3) = 0
+		)
+		AND ${periodMatcher}
+		AND role = 1", $dblink);
 
 ?>
 <!doctype html>
@@ -111,7 +163,27 @@ $players_attack_stats = load_query("
 <head>
 <meta charset="utf-8">
 
-<title>Stats for <?php echo "{$seasonStart} - {$seasonEnd}"; ?></title>
+<?php
+if ($periodStart && $periodEnd) {
+	if (@$_GET['period'] == 'season') {
+		$htmlTitle = "Stats for this season ({$periodStart} to {$periodEnd})";
+	}
+	else {
+		$htmlTitle = "Stats for {$periodStart} to {$periodEnd}";
+	}
+}
+else if ($periodStart) {
+	$htmlTitle = "Stats since {$periodStart}";
+}
+else if ($periodEnd) {
+	$htmlTitle = "Stats until {$periodEnd}";
+}
+else {
+	$htmlTitle = "Stats for all time";
+}
+
+?>
+<title><?php echo $htmlTitle; ?></title>
   <!--[if lt IE 9]>
   <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
@@ -133,11 +205,12 @@ $players_attack_stats = load_query("
 
 <body>
 
+
 <?php
 include 'templates/header.php';
 ?>
 
-<h1>Stats for <?php echo "{$seasonStart} - {$seasonEnd}"; ?></h1>
+<h1><?php echo $htmlTitle; ?></h1>
 
 <div class="tab-summary"></div>
 
@@ -176,6 +249,12 @@ echo table_to_html($roles_averages);
 <div class="tab" data-groupname="Bids">
 <?php
 echo table_to_html($player_bids);
+?>
+</div>
+
+<div class="tab" data-groupname="Self-calling">
+<?php
+echo table_to_html($self_calling);
 ?>
 </div>
 
