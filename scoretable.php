@@ -1,18 +1,18 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 
+require "period.php";
+
 require_once 'dbsupport.php';
 
 $dblink = tarot_connect();
-
-$allTimeScores = load_query("SELECT player, SUM(player_score) as player_score FROM game_insight GROUP BY player_id ORDER BY player_score DESC", $dblink);
 
 $players = load_query("
 	SELECT DISTINCT players.name AS name
 	FROM players 
 		JOIN game_players ON (players.id = game_players.player_id) 
 		JOIN games ON (game_players.game_id = games.id)
-	WHERE DATE(games.date) = DATE(NOW())", $dblink);
+	WHERE ${periodMatcher}", $dblink);
 $newPlayers = array();
 foreach($players as $r) {
 	$newPlayers[] = $r['name'];
@@ -24,7 +24,7 @@ $todayScoreTable = score_array(load_query("SELECT game_id, TIME(date) AS date, c
 	FROM game_players
 		JOIN games ON (game_players.game_id = games.id)
 		JOIN players ON (game_players.player_id = players.id)
-	WHERE DATE(date) = DATE(NOW())
+	WHERE ${periodMatcher}
 	ORDER BY games.date ASC", $dblink), $players);
 //take the columns and remove the 'game' header (first) to find the player names
 $todayScoreTally = accumulate_rows($todayScoreTable, $players);
@@ -67,17 +67,11 @@ echo '-->'.PHP_EOL;
 
 ?>
 
-<h1>Today's score</h1>
 <?php
-echo "<h2>Game by game score</h2>";
+echo "<h1>Game by game score</h1>";
 echo table_to_html($todayScoreTable);
-echo "<h2>Game by game tally</h2>";
+echo "<h1>Game by game tally</h1>";
 echo table_to_html($todayScoreTally);
-?>
-
-<h1>All time scores</h1>
-<?php
-echo table_to_html($allTimeScores);
 ?>
 
 </body>

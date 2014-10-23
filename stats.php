@@ -1,47 +1,10 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 
+require "period.php";
+
 require_once 'dbsupport.php';
-
 $dblink = tarot_connect();
-
-
-$periodStart = null;
-$periodEnd = null;
-switch (@$_GET['period']) {
-	case 'season':
-		$r = load_query("SELECT `start`, `end` FROM seasons ORDER BY `end` DESC LIMIT 1", $dblink);
-		$periodStart = $r[0]['start'];
-		$periodEnd = $r[0]['end'];
-		break;
-	default:
-		$matches = array();
-		preg_match(',([0-9-]+)?/([0-9-]+)?,', $_GET['period'], $matches);
-		$startStr = mysql_real_escape_string($matches[1]);
-		$endStr = mysql_real_escape_string($matches[2]);
-		if ($matches[1]) {
-			$periodStart = $startStr;
-		}
-		if ($matches[2]) {
-			$periodEnd = $endStr;
-		}
-		break;
-	case null:
-	case 'alltime':
-		break;
-}
-
-$periodStmts = array();
-if ($periodStart) {
-	$periodStmts[] = "DATE(date) > DATE('".$periodStart."')";
-}
-if ($periodEnd) {
-	$periodStmts[] = "DATE(date) < DATE('".$periodEnd."')";
-}
-if (count($periodStmts) == 0) {
-	$periodStmts[] = "TRUE";
-}
-$periodMatcher = implode(" AND ", $periodStmts);
 
 
 $r = mysql_query("SELECT 
@@ -139,6 +102,7 @@ $players_attack_stats = load_query("
 	GROUP BY player, games.contract
 	ORDER BY player ASC, games.contract DESC", $dblink);
 
+
 $self_calling = load_query("
 	SELECT date, players.name AS player, bids.name AS bid, score, contract
 	FROM game_players
@@ -164,7 +128,10 @@ $self_calling = load_query("
 <meta charset="utf-8">
 
 <?php
-if ($periodStart && $periodEnd) {
+if (@$_GET['period'] == 'today') {
+	$htmlTitle = "Stats for today";
+}
+else if ($periodStart && $periodEnd) {
 	if (@$_GET['period'] == 'season') {
 		$htmlTitle = "Stats for this season ({$periodStart} to {$periodEnd})";
 	}

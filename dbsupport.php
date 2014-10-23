@@ -1,7 +1,7 @@
 <?php
 
 function tarot_connect() {
-	include_once "dbcredentials.php";
+	include "dbcredentials.php";
 	$dblink = mysql_connect($host, $user, $password);
 	mysql_set_charset('utf8', $dblink);
 	mysql_select_db('tarot', $dblink);
