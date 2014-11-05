@@ -38,7 +38,7 @@ function load_query($query, $dbLink = null) {
 
 function table_to_html(array $rows, array $columnNames = null) {
 	$result = '';
-	$headers = current($rows);
+	$headers = current($rows) ?: array();
 	$result .= "<table><thead><tr>";
 	foreach ($headers as $header => $bla) {
 		if ($columnNames && !isset($columnNames[$header])) {
