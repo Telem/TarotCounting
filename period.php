@@ -42,7 +42,7 @@ if ($periodEnd) {
 if (count($periodStmts) == 0) {
 	$periodStmts[] = "TRUE";
 }
-$periodMatcher = implode(" AND ", $periodStmts);
+$periodMatcher = '('.implode(" AND ", $periodStmts).')';
 
 mysql_close($periodDBLink);
 
