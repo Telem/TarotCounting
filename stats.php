@@ -120,6 +120,18 @@ $self_calling = load_query("
 		AND ${periodMatcher}
 		AND role = 1", $dblink);
 
+$cutest_couples = load_query("
+	SELECT attackers_details.name AS attacker, callees_details.name AS callee, COUNT(*)
+	FROM games
+		JOIN game_players AS attackers ON (games.id = attackers.game_id)
+			JOIN players AS attackers_details ON (attackers.player_id = attackers_details.id)
+		JOIN game_players AS callees ON (games.id = callees.game_id)
+			JOIN players AS callees_details ON (callees.player_id = callees_details.id)
+	WHERE attackers.role = 1
+		AND callees.role = 3
+		AND ${periodMatcher}
+	GROUP BY attacker, callee", $dblink);
+
 ?>
 <!doctype html>
 
@@ -206,6 +218,12 @@ echo table_to_html($players_attack_stats);
 </div>
 
 
+<div class="tab" data-groupname="Bids">
+<?php
+echo table_to_html($player_bids);
+?>
+</div>
+
 <div class="tab" data-groupname="Averages by roles">
 <?php
 echo '<div class="roleperuser">'.table_to_html($player_average).'</div>';
@@ -213,15 +231,15 @@ echo table_to_html($roles_averages);
 ?>
 </div>
 
-<div class="tab" data-groupname="Bids">
-<?php
-echo table_to_html($player_bids);
-?>
-</div>
-
 <div class="tab" data-groupname="Self-calling">
 <?php
 echo table_to_html($self_calling);
+?>
+</div>
+
+<div class="tab" data-groupname="Cutest couples">
+<?php
+echo table_to_html($cutest_couples);
 ?>
 </div>
 
