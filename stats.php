@@ -42,6 +42,17 @@ while ($tuple = mysql_fetch_array($r, MYSQL_ASSOC)) {
 	$overview_stats[$tuple['player_id']]['avg_attack_contract'] = $tuple['avg_attack_contract'];
 }
 
+$depreciated_scores = load_query("
+	SELECT 
+	players.name AS player, 
+	SUM(Player_Game_Score_Depreciated(game_id, player_id)) AS player_score
+	FROM game_players 
+		JOIN players ON (game_players.player_id = players.id)
+		JOIN games ON (game_players.game_id = games.id)
+	WHERE ${periodMatcher}
+	GROUP BY player_id 
+	ORDER BY player_score DESC", $dblink);
+
 $player_average = load_query("
 	SELECT players.name AS Player, 
 		role AS Role, 
@@ -205,7 +216,15 @@ echo table_to_html($overview_stats, array(
 	'avg_attack_hand_score' => 'Average hand score when attacking',
 	'avg_attack_contract' => 'Average contract when attacking',
 ));
+?>
+</div>
 
+<div class="tab" data-groupname="Depreciated scores">
+<?php 
+echo table_to_html($depreciated_scores, array(
+	'player' => 'Player', 
+	'player_score' => 'Depreciated score',
+));
 ?>
 </div>
 

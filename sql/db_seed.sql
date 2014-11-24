@@ -106,8 +106,10 @@ CREATE TABLE IF NOT EXISTS `games` (
   `score` tinyint(4) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `FK_games_contracts` (`contract`),
+  KEY `date` (`date`),
   CONSTRAINT `FK_games_contracts` FOREIGN KEY (`contract`) REFERENCES `contracts` (`value`)
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=550 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 -- Dumping structure for table tarot.game_achievements
 CREATE TABLE IF NOT EXISTS `game_achievements` (
@@ -119,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `game_achievements` (
   CONSTRAINT `FK_game_achievements_game_players` FOREIGN KEY (`game_id`, `player_id`) REFERENCES `game_players` (`game_id`, `player_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `FK__achievements` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 -- Dumping structure for view tarot.game_insight
 -- Creating temporary table to overcome VIEW dependency errors
@@ -144,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `game_players` (
   PRIMARY KEY (`game_id`,`player_id`),
   KEY `FK_game_players_players` (`player_id`),
   KEY `FK_game_players_bids` (`bid`),
-  KEY `FK_game_players_roles` (`role`),
+  KEY `role` (`role`),
   CONSTRAINT `FK_game_players_bids` FOREIGN KEY (`bid`) REFERENCES `bids` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `FK_game_players_games` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `FK_game_players_players` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE,
@@ -163,6 +166,21 @@ BEGIN
 	DECLARE petit_au_bout INT DEFAULT 0;
 	DECLARE achievement_bonus INT DEFAULT 0;
 	
+	DECLARE cursor_achievements CURSOR FOR
+      SELECT SUM(achievements.base_score), SUM(achievements.hand_score)
+		FROM game_achievements
+			JOIN achievements ON (game_achievements.achievement_id = achievements.id)
+		WHERE game_achievements.game_id = game_id
+			AND game_achievements.achievement_id != 3;
+	
+	DECLARE cursor_petit_au_bout CURSOR FOR	
+	SELECT IF((game_players.role = 1 OR game_players.role = 3) XOR games.score < games.contract,10,-10)
+		FROM game_achievements
+			JOIN games ON (game_achievements.game_id = games.id)
+			JOIN game_players ON (game_achievements.game_id = game_players.game_id AND game_achievements.player_id = game_players.player_id)
+		WHERE game_achievements.game_id = game_id
+			AND game_achievements.achievement_id = 3;
+	
 	SELECT base, multiplier 
 		FROM bids
 		WHERE bids.id = (SELECT MAX(bid) 
@@ -176,22 +194,18 @@ BEGIN
 		WHERE id = game_id
 		INTO game_diff;
 	
-	SELECT SUM(achievements.base_score), SUM(achievements.hand_score)
-		FROM game_achievements
-			JOIN achievements ON (game_achievements.achievement_id = achievements.id)
-		WHERE game_achievements.game_id = game_id
-			AND game_achievements.achievement_id != 3
-		INTO achievement_base, achievement_bonus;
+	OPEN cursor_achievements; 
+	IF FOUND_ROWS() > 0 THEN
+		FETCH cursor_achievements INTO achievement_base, achievement_bonus;
+	END IF;
+	CLOSE cursor_achievements;
 	
-	SELECT IF((game_players.role = 1 OR game_players.role = 3) XOR games.score < games.contract,10,-10)
-		FROM game_achievements
-			JOIN games ON (game_achievements.game_id = games.id)
-			JOIN game_players ON (game_achievements.game_id = game_players.game_id AND game_achievements.player_id = game_players.player_id)
-		WHERE game_achievements.game_id = game_id
-			AND game_achievements.achievement_id = 3
-		INTO petit_au_bout;
-	
-		
+	OPEN cursor_petit_au_bout; 
+	IF FOUND_ROWS() > 0 THEN
+		FETCH cursor_petit_au_bout INTO petit_au_bout;
+	END IF;
+	CLOSE cursor_petit_au_bout;
+			
 	RETURN (bid_base + game_diff + COALESCE(achievement_base, 0) + COALESCE(petit_au_bout, 0)) * bid_multiplier + COALESCE(achievement_bonus, 0);
 END//
 DELIMITER ;
@@ -252,19 +266,7 @@ CREATE TABLE IF NOT EXISTS `players` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Dumping data for table tarot.players: ~7 rows (approximately)
-/*!40000 ALTER TABLE `players` DISABLE KEYS */;
-INSERT IGNORE INTO `players` (`id`, `name`) VALUES
-	(1, 'Mathieu'),
-	(2, 'Balazs'),
-	(3, 'Mark'),
-	(4, 'Simon'),
-	(5, 'Alberto'),
-	(6, 'Raimon'),
-	(7, 'Chris');
-/*!40000 ALTER TABLE `players` ENABLE KEYS */;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
 -- Dumping structure for function tarot.Player_Game_Score
@@ -309,6 +311,24 @@ BEGIN
 		INTO personal_malus;
 
 	RETURN player_share * hand_score + COALESCE(personal_bonus,0) - COALESCE(personal_malus, 0);
+END//
+DELIMITER ;
+
+
+-- Dumping structure for function tarot.Player_Game_Score_Depreciated
+DELIMITER //
+CREATE DEFINER=`root`@`localhost` FUNCTION `Player_Game_Score_Depreciated`(`game_id` INT, `player_id` INT) RETURNS int(11)
+BEGIN
+	DECLARE normal_score INT;
+	DECLARE game_date TIMESTAMP;
+	DECLARE days_since INT;
+	
+	SELECT Player_Game_Score(game_id, player_id) INTO normal_score;
+	SELECT games.date FROM games WHERE games.id = game_id INTO game_date;
+	
+	SELECT DATE(NOW()) - DATE(game_date) INTO days_since;
+
+	RETURN normal_score * POW(0.90, days_since);
 END//
 DELIMITER ;
 
@@ -394,14 +414,7 @@ CREATE TABLE IF NOT EXISTS `seasons` (
   `start` date NOT NULL,
   `end` date NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Dumping data for table tarot.seasons: ~1 rows (approximately)
-/*!40000 ALTER TABLE `seasons` DISABLE KEYS */;
-INSERT IGNORE INTO `seasons` (`id`, `start`, `end`) VALUES
-	(1, '2014-07-25', '2014-08-25'),
-	(2, '2014-08-26', '2014-09-25');
-/*!40000 ALTER TABLE `seasons` ENABLE KEYS */;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
 -- Dumping structure for view tarot.game_insight
@@ -413,7 +426,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- Dumping structure for view tarot.player_insight
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `player_insight`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `player_insight` AS select `game_players`.`player_id` AS `player_id`,`game_players`.`game_id` AS `game_id`,`bids`.`name` AS `bid`,`roles`.`name` AS `role`,`Hand_Score`(`game_players`.`game_id`) AS `hand_score`,`Player_Game_Score`(`game_players`.`game_id`,`game_players`.`player_id`) AS `player_score` from (((`game_players` join `bids` on((`bids`.`id` = `game_players`.`bid`))) join `roles` on((`roles`.`id` = `game_players`.`role`))) left join `game_achievements` on(((`game_achievements`.`game_id` = `game_players`.`game_id`) and (`game_achievements`.`player_id` = `game_players`.`player_id`))));
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `player_insight` AS select `game_players`.`player_id` AS `player_id`,`game_players`.`game_id` AS `game_id`,`bids`.`name` AS `bid`,`roles`.`name` AS `role`,`Hand_Score`(`game_players`.`game_id`) AS `hand_score`,`Player_Game_Score`(`game_players`.`game_id`,`game_players`.`player_id`) AS `player_score` from ((`game_players` join `bids` on((`bids`.`id` = `game_players`.`bid`))) join `roles` on((`roles`.`id` = `game_players`.`role`)));
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
